@@ -6,11 +6,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# The package must be present for the editable install to map it.
 COPY pyproject.toml ./
-RUN pip install --editable .
+COPY app ./app
 
-COPY . .
+RUN pip install --editable ".[dev]"
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--reload"]
