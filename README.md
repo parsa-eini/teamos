@@ -49,15 +49,42 @@ cp .env.example .env
 
 ### Running the stack
 
-Docker Compose is introduced in Stage 1 of `IMPLEMENTATION_PLAN.md`. Once it exists, the whole
-development environment starts with:
+`.env` must exist before starting the stack, because Compose reads the database, cache and
+authentication settings from it.
 
 ```bash
 docker compose up --build
 ```
 
-Until then only the repository foundation is in place; the backend and frontend applications are
-added in later stages.
+Services and the ports they are published on:
+
+| Service    | URL / address            |
+| ---------- | ------------------------ |
+| backend    | <http://localhost:8000>  |
+| website    | <http://localhost:5173>  |
+| panel      | <http://localhost:5174>  |
+| postgres   | `localhost:5432`         |
+| redis      | `localhost:6379`         |
+
+The backend waits for PostgreSQL and Redis to report healthy before it starts. PostgreSQL data
+survives restarts in the `postgres-data` volume; use `docker compose down -v` to discard it.
+
+The `backend`, `website` and `panel` images build from their own source directories, so they only
+build once the corresponding application code exists (Stage 2 for the backend, Stage 12 for the
+panel, Stage 13 for the website). Until then, start only the datastores:
+
+```bash
+docker compose up postgres redis
+```
+
+Useful commands:
+
+```bash
+docker compose ps                 # service status
+docker compose logs -f backend    # follow one service
+docker compose down               # stop, keeping data
+docker compose down -v            # stop and delete volumes
+```
 
 ## Configuration
 
@@ -72,5 +99,5 @@ project expects and is the reference for local and deployed environments.
 
 ## Current status
 
-Phase 1 / MVP, Stage 0 (repository foundation). See `IMPLEMENTATION_PLAN.md` for the remaining
+Phase 1 / MVP, Stage 1 (Docker infrastructure). See `IMPLEMENTATION_PLAN.md` for the remaining
 stages.
