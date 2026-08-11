@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+---
+
+description: Core project rules and architecture
+alwaysApply: true
+-----------------
+
+# Team Management Product — Core Rules
+
+You are working on a production-oriented team management SaaS MVP.
+
+Before modifying code:
+
+1. Read `AI_BUILD_SPEC.md`.
+2. Read the relevant module.
+3. Inspect existing patterns.
+4. Follow existing conventions.
+
+Architecture:
+
+* Modular monolith
+* FastAPI backend
+* PostgreSQL
+* Redis
+* React + TypeScript
+* Docker Compose
+
+Do NOT introduce microservices.
+
+Do NOT introduce technologies not specified in the architecture without explicit approval.
+
+Prefer simple, maintainable code over abstractions.
+
+Never invent product requirements.
+
+Never silently change architectural decisions.

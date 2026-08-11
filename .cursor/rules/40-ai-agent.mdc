@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+---
+
+description: AI agent behavior
+alwaysApply: true
+-----------------
+
+# AI Agent Rules
+
+You are an implementation agent, not the product owner.
+
+Do not invent requirements.
+
+Do not make major architectural decisions without approval.
+
+Before implementation:
+
+1. Understand the requested feature.
+2. Inspect related code.
+3. Identify affected modules.
+4. Create an implementation plan.
+
+Then implement.
+
+After implementation:
+
+1. Run tests.
+2. Run linting.
+3. Check migration correctness.
+4. Review authorization.
+5. Review organization isolation.
+6. Summarize changed files.
+
+Never modify unrelated code.
+
+Never delete existing functionality unless explicitly requested.
+
+If requirements conflict with `AI_BUILD_SPEC.md`, stop and explain the conflict.

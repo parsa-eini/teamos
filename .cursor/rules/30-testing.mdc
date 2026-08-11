@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+---
+
+description: Testing rules
+alwaysApply: true
+-----------------
+
+# Testing Rules
+
+Every new feature requires tests.
+
+Backend tests must cover:
+
+* happy path
+* validation failure
+* authentication failure where relevant
+* authorization failure where relevant
+* cross-organization access
+
+Tests must not depend on execution order.
+
+Prefer isolated test fixtures.
+
+Do not weaken tests to make implementation pass.
+
+When fixing a bug:
+
+1. Reproduce it with a test.
+2. Fix the implementation.
+3. Keep the regression test.

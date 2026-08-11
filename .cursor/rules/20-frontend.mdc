@@ -1,0 +1,49 @@
+---
+alwaysApply: true
+---
+---
+
+description: Frontend development rules
+globs:
+
+* "website/**/*.{ts,tsx}"
+* "panel/**/*.{ts,tsx}"
+  alwaysApply: false
+
+---
+
+# Frontend Rules
+
+Use:
+
+* React
+* TypeScript
+* Vite
+* React Router
+* TanStack Query
+* Tailwind CSS
+
+Use feature-oriented structure.
+
+Use TanStack Query for server state.
+
+Do not introduce Redux unless explicitly requested.
+
+Every asynchronous page must handle:
+
+* loading
+* success
+* empty
+* error
+
+Do not duplicate API calls manually when TanStack Query can manage them.
+
+Do not assume frontend visibility equals authorization.
+
+Backend remains the source of truth for permissions.
+
+Keep components small and composable.
+
+Avoid unnecessary abstractions.
+
+Use typed API responses.

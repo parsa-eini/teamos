@@ -1,0 +1,60 @@
+---
+alwaysApply: true
+---
+---
+
+description: Backend development rules
+globs:
+
+* "backend/**/*.py"
+  alwaysApply: false
+
+---
+
+# Backend Rules
+
+Use:
+
+* Python
+* FastAPI
+* SQLAlchemy 2.x
+* Pydantic v2
+* Alembic
+* PostgreSQL
+* Redis
+* pytest
+
+Architecture:
+
+router
+→ service
+→ repository
+→ database
+
+Routers must remain thin.
+
+Business logic belongs in services.
+
+Repositories are responsible for persistence concerns.
+
+Use typed SQLAlchemy models.
+
+Use UUID primary keys.
+
+Use timezone-aware UTC timestamps.
+
+Every organization-owned query must enforce organization isolation.
+
+Never trust organization_id supplied by the client.
+
+Derive organization context from the authenticated user's membership.
+
+Authorization must be enforced server-side.
+
+Every new business feature requires tests.
+
+Every database schema change requires an Alembic migration.
+
+Do not manually modify production database schema.
+
+Never log credentials or tokens.
