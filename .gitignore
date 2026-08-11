@@ -1,0 +1,41 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Docker / local data
+postgres-data/
+redis-data/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+secrets/
