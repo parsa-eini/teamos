@@ -4,9 +4,25 @@ Public-facing application for the team management product.
 
 Stack: React, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS.
 
-Pages: `/`, `/login`, `/register`, `/features`, `/pricing`, `/about`.
+## Pages
 
-Authenticated management functionality belongs in `panel/`, not here.
+- `/` landing (hero, problem, solution, features, CTA, footer)
+- `/login`
+- `/register`
+- `/features`
+- `/pricing`
+- `/about`
 
-The application is implemented in Stage 13 of `IMPLEMENTATION_PLAN.md`. This directory is currently
-a placeholder created in Stage 0.
+Authenticated management functionality belongs in `panel/`, not here. Successful login and
+registration redirect to the panel.
+
+## Local development
+
+Copy `.env.example` to `.env` if you run Vite outside Docker.
+
+```bash
+npm install
+npm run dev
+npm test
+npm run typecheck
+```

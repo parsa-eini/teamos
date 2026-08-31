@@ -70,13 +70,9 @@ Services and the ports they are published on:
 The backend waits for PostgreSQL and Redis to report healthy before it starts. PostgreSQL data
 survives restarts in the `postgres-data` volume; use `docker compose down -v` to discard it.
 
-The `backend`, `website` and `panel` images build from their own source directories, so they only
-build once the corresponding application code exists (Stage 2 for the backend, Stage 12 for the
-panel, Stage 13 for the website). Until then, start only the datastores:
-
-```bash
-docker compose up postgres redis
-```
+The `backend`, `website` and `panel` images build from their own source directories. The website
+is the public site (`http://localhost:5173`). The panel is the authenticated app
+(`http://localhost:5174`). Both call the backend at `VITE_API_BASE_URL` from the browser.
 
 Useful commands:
 
@@ -100,4 +96,4 @@ project expects and is the reference for local and deployed environments.
 
 ## Current status
 
-Phase 1 / MVP, Stage 11 (notifications). See `IMPLEMENTATION_PLAN.md` for the remaining stages.
+Phase 1 / MVP, Stage 13 (website). See `IMPLEMENTATION_PLAN.md` for the remaining stages.

@@ -55,6 +55,9 @@ services:
     build:
       context: ./website
     restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_PANEL_URL: ${VITE_PANEL_URL:-http://localhost:5174}
     ports:
       - "5173:5173"
     volumes:
@@ -65,6 +68,9 @@ services:
     build:
       context: ./panel
     restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_WEBSITE_URL: ${VITE_WEBSITE_URL:-http://localhost:5173}
     ports:
       - "5174:5174"
     volumes:

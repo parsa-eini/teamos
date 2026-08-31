@@ -118,6 +118,10 @@ def test_current_organization_requires_authentication(client: TestClient) -> Non
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "UNAUTHORIZED"
 
+    members = client.get("/api/v1/organizations/current/members")
+    assert members.status_code == 401
+    assert members.json()["error"]["code"] == "UNAUTHORIZED"
+
 
 def test_current_organization_requires_membership(client: TestClient, app: FastAPI) -> None:
     _register(client, email="owner@example.com", organization_name="Acme")
@@ -237,6 +241,15 @@ def test_cross_organization_isolation(client: TestClient) -> None:
     assert still_b["id"] == org_b["id"]
     assert still_b["name"] == "Globex"
 
+    members_a = client.get("/api/v1/organizations/current/members", headers=_auth(token_a))
+    members_b = client.get("/api/v1/organizations/current/members", headers=_auth(token_b))
+    assert members_a.status_code == 200
+    assert members_b.status_code == 200
+    emails_a = {member["email"] for member in members_a.json()["data"]}
+    emails_b = {member["email"] for member in members_b.json()["data"]}
+    assert emails_a == {"a@example.com"}
+    assert emails_b == {"b@example.com"}
+
     # Client-supplied organization ids are ignored; context comes from membership only.
     ignored = client.patch(
         "/api/v1/organizations/current",
@@ -256,3 +269,155 @@ def test_organization_endpoints_are_documented(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
     assert "get" in paths["/api/v1/organizations/current"]
     assert "patch" in paths["/api/v1/organizations/current"]
+    assert "get" in paths["/api/v1/organizations/current/members"]
+    assert "post" in paths["/api/v1/organizations/current/members"]
+
+
+def test_owner_can_list_and_create_members(client: TestClient) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    token = _login(client, "owner@example.com")
+
+    created = client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(token),
+        json={
+            "email": "sara@example.com",
+            "password": "member-pass",
+            "first_name": "Sara",
+            "last_name": "Nouri",
+            "role": "MEMBER",
+        },
+    )
+    assert created.status_code == 201
+    body = created.json()["data"]
+    assert body["email"] == "sara@example.com"
+    assert body["first_name"] == "Sara"
+    assert body["role"] == "MEMBER"
+    assert "password" not in body
+    assert "password_hash" not in body
+
+    listed = client.get("/api/v1/organizations/current/members", headers=_auth(token))
+    assert listed.status_code == 200
+    emails = {member["email"] for member in listed.json()["data"]}
+    assert emails == {"owner@example.com", "sara@example.com"}
+    assert listed.json()["meta"]["total"] == 2
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "sara@example.com", "password": "member-pass"},
+    )
+    assert login.status_code == 200
+    sara_org = client.get(
+        "/api/v1/organizations/current",
+        headers=_auth(login.json()["data"]["access_token"]),
+    )
+    owner_org = client.get("/api/v1/organizations/current", headers=_auth(token))
+    assert sara_org.json()["data"]["id"] == owner_org.json()["data"]["id"]
+
+
+def test_create_member_rejects_duplicate_email(client: TestClient) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    token = _login(client, "owner@example.com")
+    client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(token),
+        json={
+            "email": "sara@example.com",
+            "password": "member-pass",
+            "first_name": "Sara",
+            "last_name": "Nouri",
+        },
+    )
+    duplicate = client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(token),
+        json={
+            "email": "Sara@example.com",
+            "password": "member-pass",
+            "first_name": "Sara",
+            "last_name": "Nouri",
+        },
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.json()["error"]["code"] == "RESOURCE_ALREADY_EXISTS"
+
+
+def test_create_member_rejects_owner_role(client: TestClient) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    response = client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(_login(client, "owner@example.com")),
+        json={
+            "email": "other@example.com",
+            "password": "member-pass",
+            "first_name": "Other",
+            "last_name": "User",
+            "role": "OWNER",
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_create_member_requires_authentication(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/organizations/current/members",
+        json={
+            "email": "sara@example.com",
+            "password": "member-pass",
+            "first_name": "Sara",
+            "last_name": "Nouri",
+        },
+    )
+    assert response.status_code == 401
+
+
+def test_member_cannot_create_organization_members(client: TestClient) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    owner_token = _login(client, "owner@example.com")
+    client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(owner_token),
+        json={
+            "email": "member@example.com",
+            "password": _PASSWORD,
+            "first_name": "Mem",
+            "last_name": "Ber",
+            "role": "MEMBER",
+        },
+    )
+    response = client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(_login(client, "member@example.com")),
+        json={
+            "email": "another@example.com",
+            "password": "member-pass",
+            "first_name": "A",
+            "last_name": "Nother",
+        },
+    )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_create_member_is_isolated_across_organizations(client: TestClient) -> None:
+    _register(client, email="a@example.com", organization_name="Acme")
+    _register(client, email="b@example.com", organization_name="Globex")
+    token_a = _login(client, "a@example.com")
+    token_b = _login(client, "b@example.com")
+
+    client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(token_a),
+        json={
+            "email": "acme-member@example.com",
+            "password": "member-pass",
+            "first_name": "Acme",
+            "last_name": "Member",
+        },
+    )
+
+    listed_b = client.get("/api/v1/organizations/current/members", headers=_auth(token_b))
+    emails_b = {member["email"] for member in listed_b.json()["data"]}
+    assert "acme-member@example.com" not in emails_b
+    assert emails_b == {"b@example.com"}

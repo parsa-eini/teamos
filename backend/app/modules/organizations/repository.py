@@ -2,10 +2,11 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.modules.organizations.models import Organization, OrganizationMembership
+from app.modules.users.models import User
 
 
 def get_organization_by_id(session: Session, organization_id: UUID) -> Organization | None:
@@ -55,3 +56,32 @@ def add_membership(
 ) -> OrganizationMembership:
     session.add(membership)
     return membership
+
+
+def list_members(
+    session: Session,
+    organization_id: UUID,
+    *,
+    offset: int,
+    limit: int,
+) -> tuple[list[tuple[OrganizationMembership, User]], int]:
+    filters = [OrganizationMembership.organization_id == organization_id]
+    stmt = (
+        select(OrganizationMembership, User)
+        .join(User, User.id == OrganizationMembership.user_id)
+        .where(*filters)
+    )
+    total = (
+        session.scalar(
+            select(func.count()).select_from(OrganizationMembership).where(*filters)
+        )
+        or 0
+    )
+    rows = list(
+        session.execute(
+            stmt.order_by(User.last_name.asc(), User.first_name.asc(), User.email.asc())
+            .offset(offset)
+            .limit(limit)
+        ).all()
+    )
+    return [(row[0], row[1]) for row in rows], total
