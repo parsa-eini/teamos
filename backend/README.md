@@ -12,10 +12,12 @@ Architecture: `router → service → repository → database`. See `AI_BUILD_SP
 
 ```text
 app/
-├── main.py      Application factory and the /health endpoint
-├── core/        Configuration, logging and other cross-cutting infrastructure
-├── common/      Shared building blocks used across modules
-└── tests/       Test suite
+├── main.py          Application factory and the /health endpoint
+├── core/            Configuration, logging, database and Redis
+├── common/          Exceptions, error handlers and response envelopes
+└── tests/           Test suite
+alembic/             Migration environment (no model revisions until Stage 3)
+alembic.ini
 ```
 
 The `modules/` package holding the business modules is added as those features are implemented.
@@ -43,10 +45,22 @@ uvicorn app.main:create_app --factory --reload
 `DATABASE_URL`, `REDIS_URL` and `SECRET_KEY` have no defaults and must be present in the
 environment, otherwise startup fails with a validation error.
 
+Database migrations use Alembic from this directory:
+
+```bash
+alembic upgrade head
+alembic revision --autogenerate -m "description"
+```
+
+There are no schema revisions yet; the first models arrive in Stage 3.
+
 ## Configuration
 
 Configuration is read from environment variables by `app/core/config.py`. The authoritative list of
 variables is `.env.example` in the repository root.
+
+`DATABASE_URL` should use the `postgresql+psycopg://` scheme. Unadorned `postgresql://` URLs are
+rewritten to that driver at runtime.
 
 ## Quality checks
 

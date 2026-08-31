@@ -12,6 +12,10 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.1",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -42,3 +46,4 @@ plugins = ["pydantic.mypy"]
 warn_unused_ignores = true
 warn_redundant_casts = true
 disallow_untyped_defs = true
+exclude = ["alembic"]
