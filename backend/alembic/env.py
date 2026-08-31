@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.database import Base, normalize_database_url
 
 # Import models so Base.metadata includes them for autogenerate.
+from app.modules.goals.models import Goal as Goal  # noqa: F401
 from app.modules.organizations.models import Organization as Organization  # noqa: F401
 from app.modules.projects.models import Project as Project  # noqa: F401
 from app.modules.tasks.models import Task as Task  # noqa: F401
