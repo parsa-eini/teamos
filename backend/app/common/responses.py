@@ -2,9 +2,16 @@
 
 from pydantic import BaseModel, Field
 
+from app.common.pagination import PaginationMeta
+
 
 class DataResponse[T](BaseModel):
     data: T
+
+
+class CollectionResponse[T](BaseModel):
+    data: list[T]
+    meta: PaginationMeta
 
 
 class ErrorDetail(BaseModel):

@@ -30,6 +30,20 @@ def get_membership_for_user(session: Session, user_id: UUID) -> OrganizationMemb
     )
 
 
+def get_membership_in_organization(
+    session: Session,
+    *,
+    organization_id: UUID,
+    user_id: UUID,
+) -> OrganizationMembership | None:
+    return session.scalar(
+        select(OrganizationMembership).where(
+            OrganizationMembership.organization_id == organization_id,
+            OrganizationMembership.user_id == user_id,
+        )
+    )
+
+
 def add_organization(session: Session, organization: Organization) -> Organization:
     session.add(organization)
     return organization

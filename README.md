@@ -99,5 +99,4 @@ project expects and is the reference for local and deployed environments.
 
 ## Current status
 
-Phase 1 / MVP, Stage 1 (Docker infrastructure). See `IMPLEMENTATION_PLAN.md` for the remaining
-stages.
+Phase 1 / MVP, Stage 5 (team management). See `IMPLEMENTATION_PLAN.md` for the remaining stages.

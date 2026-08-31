@@ -14,6 +14,7 @@ from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.core.redis import RedisClient, create_redis
 from app.modules.auth.router import router as auth_router
 from app.modules.organizations.router import router as organizations_router
+from app.modules.teams.router import router as teams_router
 from app.modules.users.router import router as users_router
 
 
@@ -63,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(organizations_router, prefix="/api/v1")
+    app.include_router(teams_router, prefix="/api/v1")
 
     @app.get(
         "/health",
