@@ -23,8 +23,9 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
+    organization_name: str = Field(min_length=1, max_length=255)
 
-    @field_validator("first_name", "last_name")
+    @field_validator("first_name", "last_name", "organization_name")
     @classmethod
     def names_must_not_be_blank(cls, value: str) -> str:
         stripped = value.strip()

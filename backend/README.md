@@ -15,7 +15,7 @@ app/
 ├── main.py          Application factory and the /health endpoint
 ├── core/            Configuration, logging, database, Redis and security
 ├── common/          Exceptions, error handlers, dependencies and response envelopes
-├── modules/         Business modules (auth, users, ...)
+├── modules/         Business modules (auth, users, organizations, ...)
 └── tests/           Test suite
 alembic/             Migration environment
 alembic.ini

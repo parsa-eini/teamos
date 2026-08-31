@@ -5,9 +5,10 @@ yields an open session and closes it afterwards; it does not commit.
 """
 
 from collections.abc import Iterator
+from typing import Any
 
 from fastapi import Request
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -32,15 +33,23 @@ def normalize_database_url(url: str) -> str:
     return url
 
 
+def _enable_sqlite_foreign_keys(dbapi_connection: Any, _connection_record: Any) -> None:
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 def create_engine_from_settings(settings: Settings) -> Engine:
     url = normalize_database_url(settings.database_url)
     if url.startswith("sqlite"):
         # StaticPool keeps an in-memory database shared across connections (needed in tests).
-        return create_engine(
+        engine = create_engine(
             url,
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
         )
+        event.listen(engine, "connect", _enable_sqlite_foreign_keys)
+        return engine
     return create_engine(url, pool_pre_ping=True)
 
 

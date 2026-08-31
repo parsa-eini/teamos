@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.database import Base, normalize_database_url
 
 # Import models so Base.metadata includes them for autogenerate.
+from app.modules.organizations.models import Organization as Organization  # noqa: F401
 from app.modules.users.models import User as User  # noqa: F401
 
 config = context.config

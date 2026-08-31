@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.common.exceptions import InvalidCredentialsError, ResourceAlreadyExistsError
 from app.core.config import Settings
 from app.core.security import create_access_token, hash_password, verify_password
+from app.modules.organizations.service import create_organization_with_owner
 from app.modules.users import repository as users_repository
 from app.modules.users.models import User
 from app.modules.users.schemas import RegisterRequest
@@ -28,6 +29,13 @@ def register_user(session: Session, payload: RegisterRequest) -> User:
         is_active=True,
     )
     users_repository.add(session, user)
+    session.flush()
+
+    create_organization_with_owner(
+        session,
+        name=payload.organization_name,
+        owner_user_id=user.id,
+    )
 
     try:
         session.commit()

@@ -20,7 +20,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     status_code=status.HTTP_201_CREATED,
     summary="Register",
     description=(
-        "Create a user account with email and password. The password is stored as an Argon2id hash."
+        "Create a user account and the user's initial organization. "
+        "The password is stored as an Argon2id hash. The caller becomes the organization owner."
     ),
     responses={
         409: {"model": ErrorResponse, "description": "Email already registered"},

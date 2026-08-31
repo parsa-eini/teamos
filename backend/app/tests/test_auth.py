@@ -13,6 +13,7 @@ _REGISTER_PAYLOAD = {
     "password": "correct-horse",
     "first_name": "Alex",
     "last_name": "Manager",
+    "organization_name": "Alex Team",
 }
 
 

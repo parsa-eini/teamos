@@ -75,12 +75,15 @@ def test_get_db_session_dependency_yields_a_working_session(settings: Settings) 
     assert response.json() == {"value": 1}
 
 
-def test_alembic_users_revision_is_the_current_head() -> None:
+def test_alembic_head_is_organizations_revision() -> None:
     assert (_BACKEND_ROOT / "alembic.ini").is_file()
     assert (_BACKEND_ROOT / "alembic" / "env.py").is_file()
     assert (_BACKEND_ROOT / "alembic" / "script.py.mako").is_file()
     revision_files = list((_BACKEND_ROOT / "alembic" / "versions").glob("*.py"))
-    assert [path.name for path in revision_files] == ["0001_create_users.py"]
+    assert sorted(path.name for path in revision_files) == [
+        "0001_create_users.py",
+        "0002_create_organizations.py",
+    ]
 
     result = run(
         [executable, "-m", "alembic", "heads"],
@@ -90,4 +93,4 @@ def test_alembic_users_revision_is_the_current_head() -> None:
         check=False,
     )
     assert result.returncode == 0
-    assert "0001_create_users" in result.stdout
+    assert "0002_create_organizations" in result.stdout
