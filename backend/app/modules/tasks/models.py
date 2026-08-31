@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -34,6 +34,13 @@ class Task(Base):
         CheckConstraint(
             "priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')",
             name="ck_tasks_priority",
+        ),
+        Index("ix_tasks_organization_id_status", "organization_id", "status"),
+        Index(
+            "ix_tasks_organization_id_status_due_date",
+            "organization_id",
+            "status",
+            "due_date",
         ),
     )
 

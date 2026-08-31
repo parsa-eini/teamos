@@ -157,6 +157,30 @@ def test_me_returns_authenticated_user(client: TestClient) -> None:
     assert "password_hash" not in body
 
 
+def test_me_rejects_inactive_user(client: TestClient, app: FastAPI) -> None:
+    _register(client)
+    token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "alex@example.com", "password": "correct-horse"},
+    ).json()["data"]["access_token"]
+
+    session: Session = app.state.session_factory()
+    try:
+        user = session.scalar(select(User).where(User.email == "alex@example.com"))
+        assert user is not None
+        user.is_active = False
+        session.commit()
+    finally:
+        session.close()
+
+    response = client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHORIZED"
+
+
 def test_auth_endpoints_are_documented(client: TestClient) -> None:
     schema = client.get("/openapi.json").json()
     paths = schema["paths"]

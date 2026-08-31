@@ -1,25 +1,29 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createQueryClient } from "@/app/queryClient";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { AuthProvider } from "@/hooks/useAuth";
 import { clearAccessToken } from "@/lib/auth";
+import { jsonResponse, OWNER_USER } from "@/test/render";
 
 function renderLogin() {
   const queryClient = createQueryClient();
-  return     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/login"]}>
-          <AuthProvider>
-            <LoginPage />
-          </AuthProvider>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={["/login"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard" element={<p>Dashboard home</p>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 describe("LoginPage", () => {
@@ -57,5 +61,25 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
+  });
+
+  it("stores the token and navigates to the dashboard on success", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/login")) {
+        return jsonResponse({ data: { access_token: "access-token", token_type: "bearer" } });
+      }
+      if (url.includes("/users/me")) {
+        return jsonResponse({ data: OWNER_USER });
+      }
+      return jsonResponse({ error: { code: "RESOURCE_NOT_FOUND", message: "Not found" } }, 404);
+    });
+
+    const user = userEvent.setup();
+    renderLogin();
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Password"), "correct-horse");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText("Dashboard home")).toBeInTheDocument();
   });
 });

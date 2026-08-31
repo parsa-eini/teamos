@@ -62,3 +62,23 @@ def test_refresh_type_token_is_rejected(settings: Settings) -> None:
 
     with pytest.raises(UnauthorizedError):
         decode_access_token(token, settings)
+
+
+def test_token_signed_with_a_different_secret_is_rejected(settings: Settings) -> None:
+    other = settings.model_copy(update={"secret_key": "another-secret-key-that-is-32-bytes"})
+    token = create_access_token(uuid4(), other)
+
+    with pytest.raises(UnauthorizedError):
+        decode_access_token(token, settings)
+
+
+def test_token_with_invalid_subject_is_rejected(settings: Settings) -> None:
+    payload = {
+        "sub": "not-a-uuid",
+        "type": "access",
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+    }
+    token = jwt.encode(payload, settings.secret_key, algorithm="HS256")
+
+    with pytest.raises(UnauthorizedError):
+        decode_access_token(token, settings)

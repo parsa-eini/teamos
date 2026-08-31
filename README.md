@@ -67,8 +67,10 @@ Services and the ports they are published on:
 | postgres   | `localhost:5432`         |
 | redis      | `localhost:6379`         |
 
-The backend waits for PostgreSQL and Redis to report healthy before it starts. PostgreSQL data
-survives restarts in the `postgres-data` volume; use `docker compose down -v` to discard it.
+The backend waits for PostgreSQL and Redis to report healthy before it starts. On startup the
+backend applies Alembic migrations (`alembic upgrade head`) so a fresh volume has the current
+schema. PostgreSQL data survives restarts in the `postgres-data` volume; use
+`docker compose down -v` to discard it.
 
 The `backend`, `website` and `panel` images build from their own source directories. The website
 is the public site (`http://localhost:5173`). The panel is the authenticated app
@@ -96,4 +98,4 @@ project expects and is the reference for local and deployed environments.
 
 ## Current status
 
-Phase 1 / MVP, Stage 13 (website). See `IMPLEMENTATION_PLAN.md` for the remaining stages.
+Phase 1 / MVP, Stage 14 (quality). See `IMPLEMENTATION_PLAN.md` and `docs/quality.md`.

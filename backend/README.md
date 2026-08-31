@@ -52,8 +52,10 @@ alembic revision --autogenerate -m "description"
 ```
 
 Revisions create the `users`, `organizations`, `organization_memberships`, `teams`,
-`team_memberships`, `projects`, `tasks`, `goals`, `checkins`, and `notifications` tables. After
-changing models, generate a revision and apply it with `alembic upgrade head`.
+`team_memberships`, `projects`, `tasks`, `goals`, `checkins`, and `notifications` tables, plus
+composite indexes used by dashboard and list filters. After changing models, generate a revision
+and apply it with `alembic upgrade head`. Docker Compose runs `alembic upgrade head` on backend
+startup.
 
 ## Configuration
 
@@ -66,8 +68,9 @@ rewritten to that driver at runtime.
 ## Quality checks
 
 ```bash
-pytest          # tests
-ruff check .    # linting
-ruff format .   # formatting
-mypy app        # type checking
+pytest                                      # tests
+pytest --cov=app --cov-report=term-missing  # tests with coverage
+ruff check .                                # linting
+ruff format .                               # formatting
+mypy app                                    # type checking
 ```

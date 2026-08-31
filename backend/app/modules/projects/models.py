@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     String,
     Text,
     func,
@@ -37,6 +38,7 @@ class Project(Base):
             "end_date IS NULL OR start_date IS NULL OR end_date >= start_date",
             name="ck_projects_dates",
         ),
+        Index("ix_projects_organization_id_status", "organization_id", "status"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

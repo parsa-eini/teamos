@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.core.config import MIN_SECRET_KEY_LENGTH, Settings
 
 _ENV_VARS = (
     "DATABASE_URL",
@@ -25,7 +25,7 @@ def build_settings(cors_origins: str = "") -> Settings:
     return Settings(
         database_url="postgresql://test:test@localhost:5432/test",
         redis_url="redis://localhost:6379/0",
-        secret_key="test-secret-key",
+        secret_key="test-secret-key-that-is-at-least-32b",
         cors_origins=cors_origins,
     )
 
@@ -55,15 +55,30 @@ def test_missing_required_settings_are_rejected() -> None:
         Settings()
 
 
+def test_short_secret_key_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings(
+            database_url="postgresql://test:test@localhost:5432/test",
+            redis_url="redis://localhost:6379/0",
+            secret_key="too-short",
+        )
+
+
+def test_secret_key_minimum_length_is_enforced() -> None:
+    assert MIN_SECRET_KEY_LENGTH == 32
+    settings = build_settings()
+    assert len(settings.secret_key) >= MIN_SECRET_KEY_LENGTH
+
+
 def test_settings_are_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "postgresql://env:env@postgres:5432/env")
     monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
-    monkeypatch.setenv("SECRET_KEY", "from-environment")
+    monkeypatch.setenv("SECRET_KEY", "from-environment-secret-key-32bx")
     monkeypatch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:5173")
 
     settings = Settings()
 
-    assert settings.secret_key == "from-environment"
+    assert settings.secret_key == "from-environment-secret-key-32bx"
     assert settings.access_token_expire_minutes == 15
     assert settings.cors_origin_list == ["http://localhost:5173"]

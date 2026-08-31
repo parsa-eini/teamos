@@ -6,6 +6,7 @@ Per `AI_BUILD_SPEC.md` section 5 this directory holds:
 architecture.md    System architecture
 database.md        Database model and constraints
 api.md             API surface and conventions
+quality.md         Stage 14 coverage, security, and performance review
 decisions/         Architecture decision records
 ```
 

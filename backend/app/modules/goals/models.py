@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -35,6 +36,7 @@ class Goal(Base):
             name="ck_goals_status",
         ),
         CheckConstraint("progress >= 0 AND progress <= 100", name="ck_goals_progress"),
+        Index("ix_goals_organization_id_updated_at", "organization_id", "updated_at"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

@@ -75,7 +75,7 @@ def test_get_db_session_dependency_yields_a_working_session(settings: Settings) 
     assert response.json() == {"value": 1}
 
 
-def test_alembic_head_is_notifications_revision() -> None:
+def test_alembic_head_is_query_indexes_revision() -> None:
     assert (_BACKEND_ROOT / "alembic.ini").is_file()
     assert (_BACKEND_ROOT / "alembic" / "env.py").is_file()
     assert (_BACKEND_ROOT / "alembic" / "script.py.mako").is_file()
@@ -89,6 +89,7 @@ def test_alembic_head_is_notifications_revision() -> None:
         "0006_create_goals.py",
         "0007_create_checkins.py",
         "0008_create_notifications.py",
+        "0009_add_query_indexes.py",
     ]
 
     result = run(
@@ -99,4 +100,10 @@ def test_alembic_head_is_notifications_revision() -> None:
         check=False,
     )
     assert result.returncode == 0
-    assert "0008_create_notifications" in result.stdout
+    assert "0009_add_query_indexes" in result.stdout
+
+
+def test_backend_entrypoint_applies_migrations_before_startup() -> None:
+    entrypoint = (_BACKEND_ROOT / "entrypoint.sh").read_text(encoding="utf-8")
+    assert "alembic upgrade head" in entrypoint
+    assert "exec" in entrypoint

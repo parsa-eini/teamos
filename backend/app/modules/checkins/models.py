@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Text, func
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -25,6 +25,7 @@ class CheckIn(Base):
         ),
         CheckConstraint("period_end >= period_start", name="ck_checkins_period"),
         CheckConstraint("manager_id <> member_id", name="ck_checkins_distinct_participants"),
+        Index("ix_checkins_organization_id_updated_at", "organization_id", "updated_at"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

@@ -204,6 +204,28 @@ def test_create_project_rejects_team_from_another_organization(client: TestClien
     assert response.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
 
 
+def test_admin_can_create_and_update_project(client: TestClient, app: FastAPI) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    _register(client, email="admin@example.com", organization_name="Other")
+    _move_user_to_owner_org(app, "owner@example.com", "admin@example.com", OrganizationRole.ADMIN)
+    admin_token = _login(client, "admin@example.com")
+
+    created = client.post(
+        "/api/v1/projects",
+        headers=_auth(admin_token),
+        json={"name": "Admin Project", "status": "ACTIVE"},
+    )
+    assert created.status_code == 201
+    project_id = created.json()["data"]["id"]
+    patched = client.patch(
+        f"/api/v1/projects/{project_id}",
+        headers=_auth(admin_token),
+        json={"name": "Admin Project Updated"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["data"]["name"] == "Admin Project Updated"
+
+
 def test_member_cannot_create_or_update_project(client: TestClient, app: FastAPI) -> None:
     _register(client, email="owner@example.com", organization_name="Acme")
     _register(client, email="member@example.com", organization_name="Other")

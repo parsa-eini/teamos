@@ -421,3 +421,46 @@ def test_create_member_is_isolated_across_organizations(client: TestClient) -> N
     emails_b = {member["email"] for member in listed_b.json()["data"]}
     assert "acme-member@example.com" not in emails_b
     assert emails_b == {"b@example.com"}
+
+
+def test_admin_can_create_organization_members(client: TestClient, app: FastAPI) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    _register(client, email="admin@example.com", organization_name="Other Co")
+    session: Session = app.state.session_factory()
+    try:
+        owner = session.scalar(select(User).where(User.email == "owner@example.com"))
+        admin = session.scalar(select(User).where(User.email == "admin@example.com"))
+        assert owner is not None
+        assert admin is not None
+        owner_membership = session.scalar(
+            select(OrganizationMembership).where(OrganizationMembership.user_id == owner.id)
+        )
+        admin_membership = session.scalar(
+            select(OrganizationMembership).where(OrganizationMembership.user_id == admin.id)
+        )
+        assert owner_membership is not None
+        assert admin_membership is not None
+        admin_membership.organization_id = owner_membership.organization_id
+        admin_membership.role = OrganizationRole.ADMIN
+        session.commit()
+    finally:
+        session.close()
+
+    created = client.post(
+        "/api/v1/organizations/current/members",
+        headers=_auth(_login(client, "admin@example.com")),
+        json={
+            "email": "new-member@example.com",
+            "password": "member-pass",
+            "first_name": "New",
+            "last_name": "Member",
+            "role": "MEMBER",
+        },
+    )
+    assert created.status_code == 201
+    listed = client.get(
+        "/api/v1/organizations/current/members",
+        headers=_auth(_login(client, "admin@example.com")),
+    )
+    emails = {member["email"] for member in listed.json()["data"]}
+    assert "new-member@example.com" in emails

@@ -133,6 +133,18 @@ def test_list_teams_is_paginated(client: TestClient) -> None:
     assert len(body["data"]) == 1
 
 
+def test_list_teams_rejects_page_size_above_maximum(client: TestClient) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    token = _login(client, "owner@example.com")
+
+    too_large = client.get("/api/v1/teams?page_size=101", headers=_auth(token))
+    assert too_large.status_code == 422
+    assert too_large.json()["error"]["code"] == "VALIDATION_ERROR"
+
+    zero_page = client.get("/api/v1/teams?page=0", headers=_auth(token))
+    assert zero_page.status_code == 422
+
+
 def test_create_team_requires_authentication(client: TestClient) -> None:
     response = client.post("/api/v1/teams", json={"name": "Platform"})
     assert response.status_code == 401
@@ -220,6 +232,31 @@ def test_member_can_view_assigned_team(client: TestClient, app: FastAPI) -> None
     assert listed.json()["data"][0]["id"] == team_id
     fetched = client.get(f"/api/v1/teams/{team_id}", headers=_auth(member_token))
     assert fetched.status_code == 200
+
+
+def test_admin_can_create_and_update_any_team(client: TestClient, app: FastAPI) -> None:
+    _register(client, email="owner@example.com", organization_name="Acme")
+    _register(client, email="admin@example.com", organization_name="Other")
+    _move_user_to_owner_org(app, "owner@example.com", "admin@example.com", OrganizationRole.ADMIN)
+    admin_token = _login(client, "admin@example.com")
+
+    created = client.post(
+        "/api/v1/teams",
+        headers=_auth(admin_token),
+        json={"name": "Admin Team"},
+    )
+    assert created.status_code == 201
+    team_id = created.json()["data"]["id"]
+
+    patched = client.patch(
+        f"/api/v1/teams/{team_id}",
+        headers=_auth(admin_token),
+        json={"name": "Admin Team Updated"},
+    )
+    assert patched.status_code == 200
+    listed = client.get("/api/v1/teams", headers=_auth(admin_token))
+    assert listed.json()["meta"]["total"] == 1
+    assert listed.json()["data"][0]["name"] == "Admin Team Updated"
 
 
 def test_manager_can_manage_assigned_team_only(client: TestClient, app: FastAPI) -> None:
