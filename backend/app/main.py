@@ -16,6 +16,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.checkins.router import router as checkins_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.goals.router import router as goals_router
+from app.modules.notifications.router import router as notifications_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.projects.router import router as projects_router
 from app.modules.tasks.router import router as tasks_router
@@ -75,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(goals_router, prefix="/api/v1")
     app.include_router(checkins_router, prefix="/api/v1")
     app.include_router(dashboard_router, prefix="/api/v1")
+    app.include_router(notifications_router, prefix="/api/v1")
 
     @app.get(
         "/health",

@@ -15,6 +15,8 @@ from app.modules.checkins import repository as checkins_repository
 from app.modules.checkins.models import CheckIn, CheckInStatus
 from app.modules.checkins.schemas import CheckInCreate, CheckInRead, CheckInUpdate
 from app.modules.dashboard.cache import invalidate_dashboard
+from app.modules.notifications.models import NotificationType
+from app.modules.notifications.service import add_notification
 from app.modules.organizations import repository as organizations_repository
 from app.modules.organizations.dependencies import OrganizationContext
 from app.modules.organizations.models import OrganizationMembership, OrganizationRole
@@ -120,6 +122,14 @@ def create_checkin(
         next_steps=payload.next_steps,
     )
     checkins_repository.add(session, checkin)
+    add_notification(
+        session,
+        user_id=payload.member_id,
+        actor_id=context.user.id,
+        notification_type=NotificationType.CHECKIN_CREATED,
+        title="Check-in requested",
+        message="A weekly check-in was created for you",
+    )
     session.commit()
     invalidate_dashboard(redis, context.organization.id)
     session.refresh(checkin)
@@ -144,6 +154,7 @@ def update_checkin(
     if not _can_view(context, checkin):
         raise ForbiddenError()
 
+    previous_status = checkin.status
     fields = payload.model_fields_set
     if checkin.status == CheckInStatus.REVIEWED:
         raise ValidationError("Reviewed check-ins cannot be modified")
@@ -197,6 +208,25 @@ def update_checkin(
         ):
             raise ForbiddenError("Only the manager can review this check-in")
         checkin.status = payload.status
+
+    if checkin.status == CheckInStatus.SUBMITTED and previous_status != CheckInStatus.SUBMITTED:
+        add_notification(
+            session,
+            user_id=checkin.manager_id,
+            actor_id=context.user.id,
+            notification_type=NotificationType.CHECKIN_SUBMITTED,
+            title="Check-in submitted",
+            message="A weekly check-in was submitted for review",
+        )
+    elif checkin.status == CheckInStatus.REVIEWED and previous_status != CheckInStatus.REVIEWED:
+        add_notification(
+            session,
+            user_id=checkin.member_id,
+            actor_id=context.user.id,
+            notification_type=NotificationType.CHECKIN_REVIEWED,
+            title="Check-in reviewed",
+            message="Your weekly check-in was reviewed",
+        )
 
     session.add(checkin)
     session.commit()

@@ -8,6 +8,8 @@ from app.common.exceptions import ForbiddenError, ResourceNotFoundError, Validat
 from app.common.pagination import PaginationMeta, PaginationParams
 from app.core.redis import RedisClient
 from app.modules.dashboard.cache import invalidate_dashboard
+from app.modules.notifications.models import NotificationType
+from app.modules.notifications.service import add_notification
 from app.modules.organizations import repository as organizations_repository
 from app.modules.organizations.dependencies import OrganizationContext
 from app.modules.organizations.models import OrganizationRole
@@ -132,6 +134,15 @@ def create_task(
         due_date=payload.due_date,
     )
     tasks_repository.add(session, task)
+    if payload.assignee_id is not None:
+        add_notification(
+            session,
+            user_id=payload.assignee_id,
+            actor_id=context.user.id,
+            notification_type=NotificationType.TASK_ASSIGNED,
+            title="Task assigned",
+            message=f'You were assigned "{payload.title}"',
+        )
     session.commit()
     invalidate_dashboard(redis, context.organization.id)
     session.refresh(task)
@@ -160,6 +171,8 @@ def update_task(
     elif not _can_manage_task(context, session, task):
         raise ForbiddenError()
 
+    previous_assignee_id = task.assignee_id
+
     if "project_id" in payload.model_fields_set:
         if payload.project_id is None:
             raise ValidationError("project_id is required")
@@ -179,6 +192,16 @@ def update_task(
         task.assignee_id = payload.assignee_id
     if "due_date" in payload.model_fields_set:
         task.due_date = payload.due_date
+
+    if task.assignee_id is not None and task.assignee_id != previous_assignee_id:
+        add_notification(
+            session,
+            user_id=task.assignee_id,
+            actor_id=context.user.id,
+            notification_type=NotificationType.TASK_ASSIGNED,
+            title="Task assigned",
+            message=f'You were assigned "{task.title}"',
+        )
 
     session.add(task)
     session.commit()

@@ -75,7 +75,7 @@ def test_get_db_session_dependency_yields_a_working_session(settings: Settings) 
     assert response.json() == {"value": 1}
 
 
-def test_alembic_head_is_checkins_revision() -> None:
+def test_alembic_head_is_notifications_revision() -> None:
     assert (_BACKEND_ROOT / "alembic.ini").is_file()
     assert (_BACKEND_ROOT / "alembic" / "env.py").is_file()
     assert (_BACKEND_ROOT / "alembic" / "script.py.mako").is_file()
@@ -88,6 +88,7 @@ def test_alembic_head_is_checkins_revision() -> None:
         "0005_create_tasks.py",
         "0006_create_goals.py",
         "0007_create_checkins.py",
+        "0008_create_notifications.py",
     ]
 
     result = run(
@@ -98,4 +99,4 @@ def test_alembic_head_is_checkins_revision() -> None:
         check=False,
     )
     assert result.returncode == 0
-    assert "0007_create_checkins" in result.stdout
+    assert "0008_create_notifications" in result.stdout
