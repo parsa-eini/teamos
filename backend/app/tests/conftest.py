@@ -14,6 +14,7 @@ from app.core.config import Settings
 from app.core.database import Base
 from app.main import create_app
 from app.modules.organizations.models import Organization as Organization  # noqa: F401
+from app.modules.projects.models import Project as Project  # noqa: F401
 from app.modules.teams.models import Team as Team  # noqa: F401
 from app.modules.users.models import User as User  # noqa: F401
 
