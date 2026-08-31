@@ -99,4 +99,4 @@ project expects and is the reference for local and deployed environments.
 
 ## Current status
 
-Phase 1 / MVP, Stage 6 (projects). See `IMPLEMENTATION_PLAN.md` for the remaining stages.
+Phase 1 / MVP, Stage 7 (tasks). See `IMPLEMENTATION_PLAN.md` for the remaining stages.

@@ -39,6 +39,14 @@ def _can_manage(context: OrganizationContext, session: Session, project: Project
     return _is_team_member(session, project.team_id, context.user.id)
 
 
+def can_view_project(context: OrganizationContext, session: Session, project: Project) -> bool:
+    return _can_view(context, session, project)
+
+
+def can_manage_project(context: OrganizationContext, session: Session, project: Project) -> bool:
+    return _can_manage(context, session, project)
+
+
 def _require_view(context: OrganizationContext, session: Session, project: Project) -> None:
     if not _can_view(context, session, project):
         raise ForbiddenError()

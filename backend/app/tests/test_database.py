@@ -75,7 +75,7 @@ def test_get_db_session_dependency_yields_a_working_session(settings: Settings) 
     assert response.json() == {"value": 1}
 
 
-def test_alembic_head_is_projects_revision() -> None:
+def test_alembic_head_is_tasks_revision() -> None:
     assert (_BACKEND_ROOT / "alembic.ini").is_file()
     assert (_BACKEND_ROOT / "alembic" / "env.py").is_file()
     assert (_BACKEND_ROOT / "alembic" / "script.py.mako").is_file()
@@ -85,6 +85,7 @@ def test_alembic_head_is_projects_revision() -> None:
         "0002_create_organizations.py",
         "0003_create_teams.py",
         "0004_create_projects.py",
+        "0005_create_tasks.py",
     ]
 
     result = run(
@@ -95,4 +96,4 @@ def test_alembic_head_is_projects_revision() -> None:
         check=False,
     )
     assert result.returncode == 0
-    assert "0004_create_projects" in result.stdout
+    assert "0005_create_tasks" in result.stdout

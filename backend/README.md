@@ -15,7 +15,7 @@ app/
 ├── main.py          Application factory and the /health endpoint
 ├── core/            Configuration, logging, database, Redis and security
 ├── common/          Exceptions, error handlers, pagination, dependencies and response envelopes
-├── modules/         Business modules (auth, users, organizations, teams, projects, ...)
+├── modules/         Business modules (auth, users, organizations, teams, projects, tasks, ...)
 └── tests/           Test suite
 alembic/             Migration environment
 alembic.ini
@@ -52,8 +52,8 @@ alembic revision --autogenerate -m "description"
 ```
 
 Revisions create the `users`, `organizations`, `organization_memberships`, `teams`,
-`team_memberships`, and `projects` tables. After changing models, generate a revision and apply
-it with `alembic upgrade head`.
+`team_memberships`, `projects`, and `tasks` tables. After changing models, generate a revision
+and apply it with `alembic upgrade head`.
 
 ## Configuration
 

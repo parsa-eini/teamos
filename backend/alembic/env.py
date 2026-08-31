@@ -15,6 +15,7 @@ from app.core.database import Base, normalize_database_url
 # Import models so Base.metadata includes them for autogenerate.
 from app.modules.organizations.models import Organization as Organization  # noqa: F401
 from app.modules.projects.models import Project as Project  # noqa: F401
+from app.modules.tasks.models import Task as Task  # noqa: F401
 from app.modules.teams.models import Team as Team  # noqa: F401
 from app.modules.users.models import User as User  # noqa: F401
 
