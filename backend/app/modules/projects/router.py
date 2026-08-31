@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.pagination import PaginationParams, get_pagination
 from app.common.responses import CollectionResponse, DataResponse, ErrorResponse
 from app.core.database import get_db_session
+from app.core.redis import RedisClient, get_redis
 from app.modules.organizations.dependencies import OrganizationContext, get_organization_context
 from app.modules.projects.models import ProjectStatus
 from app.modules.projects.schemas import ProjectCreate, ProjectRead, ProjectUpdate
@@ -67,8 +68,9 @@ def create_project_endpoint(
     payload: ProjectCreate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[ProjectRead]:
-    project = create_project(session, context, payload)
+    project = create_project(session, context, payload, redis)
     return DataResponse(data=ProjectRead.model_validate(project))
 
 
@@ -110,8 +112,9 @@ def patch_project(
     payload: ProjectUpdate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[ProjectRead]:
-    project = update_project(session, context, project_id, payload)
+    project = update_project(session, context, project_id, payload, redis)
     return DataResponse(data=ProjectRead.model_validate(project))
 
 
@@ -129,6 +132,7 @@ def delete_project_endpoint(
     project_id: UUID,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> Response:
-    delete_project(session, context, project_id)
+    delete_project(session, context, project_id, redis)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

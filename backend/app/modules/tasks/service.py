@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import ForbiddenError, ResourceNotFoundError, ValidationError
 from app.common.pagination import PaginationMeta, PaginationParams
+from app.core.redis import RedisClient
+from app.modules.dashboard.cache import invalidate_dashboard
 from app.modules.organizations import repository as organizations_repository
 from app.modules.organizations.dependencies import OrganizationContext
 from app.modules.organizations.models import OrganizationRole
@@ -105,7 +107,12 @@ def list_tasks(
     return [TaskRead.model_validate(task) for task in tasks], meta
 
 
-def create_task(session: Session, context: OrganizationContext, payload: TaskCreate) -> Task:
+def create_task(
+    session: Session,
+    context: OrganizationContext,
+    payload: TaskCreate,
+    redis: RedisClient,
+) -> Task:
     if context.role not in _MANAGE_ALL_ROLES and context.role != OrganizationRole.MANAGER:
         raise ForbiddenError("You do not have permission to create tasks")
 
@@ -126,6 +133,7 @@ def create_task(session: Session, context: OrganizationContext, payload: TaskCre
     )
     tasks_repository.add(session, task)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(task)
     return task
 
@@ -142,6 +150,7 @@ def update_task(
     context: OrganizationContext,
     task_id: UUID,
     payload: TaskUpdate,
+    redis: RedisClient,
 ) -> Task:
     task = _get_task_or_404(session, task_id, context.organization.id)
 
@@ -173,13 +182,17 @@ def update_task(
 
     session.add(task)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(task)
     return task
 
 
-def delete_task(session: Session, context: OrganizationContext, task_id: UUID) -> None:
+def delete_task(
+    session: Session, context: OrganizationContext, task_id: UUID, redis: RedisClient
+) -> None:
     task = _get_task_or_404(session, task_id, context.organization.id)
     if not _can_manage_task(context, session, task):
         raise ForbiddenError()
     tasks_repository.delete(session, task)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)

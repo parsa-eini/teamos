@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.pagination import PaginationParams, get_pagination
 from app.common.responses import CollectionResponse, DataResponse, ErrorResponse
 from app.core.database import get_db_session
+from app.core.redis import RedisClient, get_redis
 from app.modules.checkins.schemas import CheckInCreate, CheckInRead, CheckInUpdate
 from app.modules.checkins.service import create_checkin, get_checkin, list_checkins, update_checkin
 from app.modules.organizations.dependencies import OrganizationContext, get_organization_context
@@ -59,8 +60,9 @@ def create_checkin_endpoint(
     payload: CheckInCreate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[CheckInRead]:
-    checkin = create_checkin(session, context, payload)
+    checkin = create_checkin(session, context, payload, redis)
     return DataResponse(data=CheckInRead.model_validate(checkin))
 
 
@@ -102,6 +104,7 @@ def patch_checkin(
     payload: CheckInUpdate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[CheckInRead]:
-    checkin = update_checkin(session, context, checkin_id, payload)
+    checkin = update_checkin(session, context, checkin_id, payload, redis)
     return DataResponse(data=CheckInRead.model_validate(checkin))

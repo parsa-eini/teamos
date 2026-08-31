@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import ForbiddenError, ResourceNotFoundError, ValidationError
 from app.common.pagination import PaginationMeta, PaginationParams
+from app.core.redis import RedisClient
 from app.modules.checkins import repository as checkins_repository
 from app.modules.checkins.models import CheckIn, CheckInStatus
 from app.modules.checkins.schemas import CheckInCreate, CheckInRead, CheckInUpdate
+from app.modules.dashboard.cache import invalidate_dashboard
 from app.modules.organizations import repository as organizations_repository
 from app.modules.organizations.dependencies import OrganizationContext
 from app.modules.organizations.models import OrganizationMembership, OrganizationRole
@@ -90,6 +92,7 @@ def create_checkin(
     session: Session,
     context: OrganizationContext,
     payload: CheckInCreate,
+    redis: RedisClient,
 ) -> CheckIn:
     if context.role not in _CONDUCT_ROLES:
         raise ForbiddenError("You do not have permission to create check-ins")
@@ -118,6 +121,7 @@ def create_checkin(
     )
     checkins_repository.add(session, checkin)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(checkin)
     return checkin
 
@@ -134,6 +138,7 @@ def update_checkin(
     context: OrganizationContext,
     checkin_id: UUID,
     payload: CheckInUpdate,
+    redis: RedisClient,
 ) -> CheckIn:
     checkin = _get_checkin_or_404(session, checkin_id, context.organization.id)
     if not _can_view(context, checkin):
@@ -195,5 +200,6 @@ def update_checkin(
 
     session.add(checkin)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(checkin)
     return checkin

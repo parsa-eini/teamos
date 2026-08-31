@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.pagination import PaginationParams, get_pagination
 from app.common.responses import CollectionResponse, DataResponse, ErrorResponse
 from app.core.database import get_db_session
+from app.core.redis import RedisClient, get_redis
 from app.modules.organizations.dependencies import OrganizationContext, get_organization_context
 from app.modules.tasks.models import TaskPriority, TaskStatus
 from app.modules.tasks.schemas import TaskCreate, TaskRead, TaskUpdate
@@ -72,8 +73,9 @@ def create_task_endpoint(
     payload: TaskCreate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[TaskRead]:
-    task = create_task(session, context, payload)
+    task = create_task(session, context, payload, redis)
     return DataResponse(data=TaskRead.model_validate(task))
 
 
@@ -112,8 +114,9 @@ def patch_task(
     payload: TaskUpdate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[TaskRead]:
-    task = update_task(session, context, task_id, payload)
+    task = update_task(session, context, task_id, payload, redis)
     return DataResponse(data=TaskRead.model_validate(task))
 
 
@@ -128,6 +131,7 @@ def delete_task_endpoint(
     task_id: UUID,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> Response:
-    delete_task(session, context, task_id)
+    delete_task(session, context, task_id, redis)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import ForbiddenError, ResourceNotFoundError, ValidationError
 from app.common.pagination import PaginationMeta, PaginationParams
+from app.core.redis import RedisClient
+from app.modules.dashboard.cache import invalidate_dashboard
 from app.modules.organizations.dependencies import OrganizationContext
 from app.modules.organizations.models import OrganizationRole
 from app.modules.projects import repository as projects_repository
@@ -123,6 +125,7 @@ def create_project(
     session: Session,
     context: OrganizationContext,
     payload: ProjectCreate,
+    redis: RedisClient,
 ) -> Project:
     _require_create(context)
     _resolve_team(session, context.organization.id, payload.team_id)
@@ -140,6 +143,7 @@ def create_project(
     )
     projects_repository.add(session, project)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(project)
     return project
 
@@ -155,6 +159,7 @@ def update_project(
     context: OrganizationContext,
     project_id: UUID,
     payload: ProjectUpdate,
+    redis: RedisClient,
 ) -> Project:
     project = _get_project_or_404(session, project_id, context.organization.id)
     _require_manage(context, session, project)
@@ -177,12 +182,19 @@ def update_project(
     _assert_dates_ordered(project.start_date, project.end_date)
     session.add(project)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(project)
     return project
 
 
-def delete_project(session: Session, context: OrganizationContext, project_id: UUID) -> None:
+def delete_project(
+    session: Session,
+    context: OrganizationContext,
+    project_id: UUID,
+    redis: RedisClient,
+) -> None:
     project = _get_project_or_404(session, project_id, context.organization.id)
     _require_manage(context, session, project)
     projects_repository.delete(session, project)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import ForbiddenError, ResourceNotFoundError, ValidationError
 from app.common.pagination import PaginationMeta, PaginationParams
+from app.core.redis import RedisClient
+from app.modules.dashboard.cache import invalidate_dashboard
 from app.modules.goals import repository as goals_repository
 from app.modules.goals.models import Goal
 from app.modules.goals.schemas import GoalCreate, GoalRead, GoalUpdate
@@ -117,7 +119,12 @@ def list_goals(
     return [GoalRead.model_validate(goal) for goal in goals], meta
 
 
-def create_goal(session: Session, context: OrganizationContext, payload: GoalCreate) -> Goal:
+def create_goal(
+    session: Session,
+    context: OrganizationContext,
+    payload: GoalCreate,
+    redis: RedisClient,
+) -> Goal:
     _require_create(context)
     _resolve_team(session, context.organization.id, payload.team_id)
     _require_team_assignable(context, session, payload.team_id)
@@ -138,6 +145,7 @@ def create_goal(session: Session, context: OrganizationContext, payload: GoalCre
     )
     goals_repository.add(session, goal)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(goal)
     return goal
 
@@ -154,6 +162,7 @@ def update_goal(
     context: OrganizationContext,
     goal_id: UUID,
     payload: GoalUpdate,
+    redis: RedisClient,
 ) -> Goal:
     goal = _get_goal_or_404(session, goal_id, context.organization.id)
     if not _can_modify(context, session, goal):
@@ -182,5 +191,6 @@ def update_goal(
 
     session.add(goal)
     session.commit()
+    invalidate_dashboard(redis, context.organization.id)
     session.refresh(goal)
     return goal

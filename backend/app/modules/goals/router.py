@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.pagination import PaginationParams, get_pagination
 from app.common.responses import CollectionResponse, DataResponse, ErrorResponse
 from app.core.database import get_db_session
+from app.core.redis import RedisClient, get_redis
 from app.modules.goals.schemas import GoalCreate, GoalRead, GoalUpdate
 from app.modules.goals.service import create_goal, get_goal, list_goals, update_goal
 from app.modules.organizations.dependencies import OrganizationContext, get_organization_context
@@ -59,8 +60,9 @@ def create_goal_endpoint(
     payload: GoalCreate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[GoalRead]:
-    goal = create_goal(session, context, payload)
+    goal = create_goal(session, context, payload, redis)
     return DataResponse(data=GoalRead.model_validate(goal))
 
 
@@ -99,6 +101,7 @@ def patch_goal(
     payload: GoalUpdate,
     session: Annotated[Session, Depends(get_db_session)],
     context: Annotated[OrganizationContext, Depends(get_organization_context)],
+    redis: Annotated[RedisClient, Depends(get_redis)],
 ) -> DataResponse[GoalRead]:
-    goal = update_goal(session, context, goal_id, payload)
+    goal = update_goal(session, context, goal_id, payload, redis)
     return DataResponse(data=GoalRead.model_validate(goal))

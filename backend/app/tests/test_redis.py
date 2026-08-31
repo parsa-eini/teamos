@@ -9,36 +9,7 @@ from redis import Redis
 from app.core.config import Settings
 from app.core.redis import RedisClient, get_redis
 from app.main import create_app
-
-
-class FakeRedis:
-    """In-memory stand-in for redis.Redis, covering the commands we actually call."""
-
-    def __init__(self) -> None:
-        self.store: dict[str, str] = {}
-        self.ttls: dict[str, int] = {}
-        self.closed = False
-
-    def get(self, name: str) -> str | None:
-        return self.store.get(name)
-
-    def set(self, name: str, value: str, ex: int | None = None) -> bool:
-        self.store[name] = value
-        if ex is None:
-            self.ttls.pop(name, None)
-        else:
-            self.ttls[name] = ex
-        return True
-
-    def delete(self, name: str) -> int:
-        if name not in self.store:
-            return 0
-        del self.store[name]
-        self.ttls.pop(name, None)
-        return 1
-
-    def close(self) -> None:
-        self.closed = True
+from app.tests.conftest import FakeRedis
 
 
 def test_get_set_and_delete_round_trip() -> None:

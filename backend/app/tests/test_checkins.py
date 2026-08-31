@@ -380,4 +380,3 @@ def test_checkin_endpoints_are_documented(client: TestClient) -> None:
     assert "get" in paths["/api/v1/checkins/{checkin_id}"]
     assert "patch" in paths["/api/v1/checkins/{checkin_id}"]
     assert "delete" not in paths.get("/api/v1/checkins/{checkin_id}", {})
-    assert "/api/v1/dashboard" not in paths
