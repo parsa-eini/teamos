@@ -384,4 +384,3 @@ def test_goal_endpoints_are_documented(client: TestClient) -> None:
     assert "get" in paths["/api/v1/goals/{goal_id}"]
     assert "patch" in paths["/api/v1/goals/{goal_id}"]
     assert "delete" not in paths.get("/api/v1/goals/{goal_id}", {})
-    assert "/api/v1/checkins" not in paths

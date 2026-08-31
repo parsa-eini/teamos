@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from app.core.config import Settings
 from app.core.database import Base
 from app.main import create_app
+from app.modules.checkins.models import CheckIn as CheckIn  # noqa: F401
 from app.modules.goals.models import Goal as Goal  # noqa: F401
 from app.modules.organizations.models import Organization as Organization  # noqa: F401
 from app.modules.projects.models import Project as Project  # noqa: F401

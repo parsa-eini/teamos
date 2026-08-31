@@ -43,7 +43,12 @@ def create_access_token(user_id: UUID, settings: Settings) -> str:
 
 def decode_access_token(token: str, settings: Settings) -> UUID:
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[_JWT_ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[_JWT_ALGORITHM],
+            leeway=timedelta(seconds=30),
+        )
     except jwt.PyJWTError as exc:
         raise UnauthorizedError("Invalid or expired access token") from exc
 
