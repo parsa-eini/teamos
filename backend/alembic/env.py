@@ -12,6 +12,9 @@ from alembic import context
 from app.core.config import get_settings
 from app.core.database import Base, normalize_database_url
 
+# Import models so Base.metadata includes them for autogenerate.
+from app.modules.users.models import User as User  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:

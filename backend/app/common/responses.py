@@ -3,6 +3,10 @@
 from pydantic import BaseModel, Field
 
 
+class DataResponse[T](BaseModel):
+    data: T
+
+
 class ErrorDetail(BaseModel):
     code: str = Field(examples=["RESOURCE_NOT_FOUND"])
     message: str = Field(examples=["Project not found"])

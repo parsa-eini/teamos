@@ -13,14 +13,13 @@ Architecture: `router → service → repository → database`. See `AI_BUILD_SP
 ```text
 app/
 ├── main.py          Application factory and the /health endpoint
-├── core/            Configuration, logging, database and Redis
-├── common/          Exceptions, error handlers and response envelopes
+├── core/            Configuration, logging, database, Redis and security
+├── common/          Exceptions, error handlers, dependencies and response envelopes
+├── modules/         Business modules (auth, users, ...)
 └── tests/           Test suite
-alembic/             Migration environment (no model revisions until Stage 3)
+alembic/             Migration environment
 alembic.ini
 ```
-
-The `modules/` package holding the business modules is added as those features are implemented.
 
 ## Running
 
@@ -52,7 +51,7 @@ alembic upgrade head
 alembic revision --autogenerate -m "description"
 ```
 
-There are no schema revisions yet; the first models arrive in Stage 3.
+The initial revision creates the `users` table. After changing models, generate a revision and apply it with `alembic upgrade head`.
 
 ## Configuration
 

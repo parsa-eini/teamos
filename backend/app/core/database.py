@@ -10,6 +10,7 @@ from fastapi import Request
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import Settings
 
@@ -32,10 +33,15 @@ def normalize_database_url(url: str) -> str:
 
 
 def create_engine_from_settings(settings: Settings) -> Engine:
-    return create_engine(
-        normalize_database_url(settings.database_url),
-        pool_pre_ping=True,
-    )
+    url = normalize_database_url(settings.database_url)
+    if url.startswith("sqlite"):
+        # StaticPool keeps an in-memory database shared across connections (needed in tests).
+        return create_engine(
+            url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    return create_engine(url, pool_pre_ping=True)
 
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:

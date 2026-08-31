@@ -1,1 +1,1 @@
-"""Cross-cutting application infrastructure: configuration, logging, database and Redis."""
+"""Cross-cutting infrastructure: configuration, logging, database, Redis and security."""
