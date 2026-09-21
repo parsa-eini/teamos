@@ -22,7 +22,8 @@ The product is a lightweight team-management platform designed to help engineeri
 * Projects
 * Tasks
 * Goals
-* Regular check-ins
+* Meetings: check-ins, one-on-ones, and performance reviews
+* Feedback about colleagues
 * Team activity
 * Basic management dashboards
 
@@ -37,7 +38,7 @@ The initial product should focus on:
 1. Team visibility
 2. Lightweight task/project management
 3. Goals and progress
-4. Regular check-ins
+4. Meetings and feedback
 5. Manager dashboard
 
 ---
@@ -67,7 +68,7 @@ Track task progress
   ↓
 Create goals
   ↓
-Record check-ins
+Record meetings
   ↓
 View manager dashboard
 ```
@@ -127,7 +128,8 @@ users
 projects
 tasks
 goals
-checkins
+meetings
+feedback
 dashboard
 notifications
 ```
@@ -165,7 +167,8 @@ team-management/
 │   │   │   ├── projects/
 │   │   │   ├── tasks/
 │   │   │   ├── goals/
-│   │   │   ├── checkins/
+│   │   │   ├── meetings/
+│   │   │   ├── feedback/
 │   │   │   ├── dashboard/
 │   │   │   └── notifications/
 │   │   │
@@ -298,7 +301,9 @@ Pages:
 
 /goals
 
-/checkins
+/meetings
+
+/feedback
 
 /settings
 ```
@@ -349,7 +354,8 @@ Can:
 * Manage teams
 * Manage projects
 * Manage goals
-* Manage check-ins
+* Manage meetings
+* Set reporting lines
 * View all dashboards
 
 ### ADMIN
@@ -357,9 +363,11 @@ Can:
 Can:
 
 * Manage members
+* Set reporting lines
 * Manage teams
 * Manage projects
 * View dashboards
+* Read all feedback except feedback about themselves
 
 ### MANAGER
 
@@ -369,7 +377,8 @@ Can:
 * Manage projects
 * Assign tasks
 * Create goals
-* Conduct check-ins
+* Conduct meetings
+* Read feedback about people in their reporting chain
 * View team dashboard
 
 ### MEMBER
@@ -381,7 +390,8 @@ Can:
 * View assigned tasks
 * Update own tasks
 * View own goals
-* Submit check-ins
+* Submit meetings
+* Write feedback about colleagues
 
 Authorization must be enforced on the backend.
 
@@ -404,7 +414,8 @@ Organization
     ├── Teams
     ├── Projects
     ├── Goals
-    └── Check-ins
+    ├── Meetings
+    └── Feedback
 ```
 
 Never return another organization's data.
@@ -459,6 +470,7 @@ id UUID PK
 organization_id UUID FK
 user_id UUID FK
 role ENUM
+reports_to_user_id UUID FK NULL
 created_at TIMESTAMP
 ```
 
@@ -467,6 +479,10 @@ Unique:
 ```text
 organization_id + user_id
 ```
+
+`reports_to_user_id` is the reporting line. It points at a user who is a member of the same
+organization, is null at the top of the tree, and may never form a cycle. The service layer
+validates both rules; `GET /organizations/current/hierarchy` returns the resulting tree.
 
 ---
 
@@ -545,7 +561,6 @@ title VARCHAR
 description TEXT NULL
 status ENUM
 priority ENUM
-assignee_id UUID FK NULL
 created_by UUID FK
 due_date DATE NULL
 created_at TIMESTAMP
@@ -570,6 +585,25 @@ HIGH
 URGENT
 ```
 
+A task can have several assignees. They live in a join table, not on the task row.
+
+```text
+task_assignees
+--------------
+id UUID PK
+task_id UUID FK
+user_id UUID FK
+created_at TIMESTAMP
+```
+
+Unique:
+
+```text
+task_id + user_id
+```
+
+The API exposes `assignee_ids`. `GET /tasks?assignee_id=...` means "has this assignee".
+
 ---
 
 # 17. Goal
@@ -579,8 +613,6 @@ goals
 -----
 id UUID PK
 organization_id UUID FK
-team_id UUID FK NULL
-user_id UUID FK NULL
 title VARCHAR
 description TEXT NULL
 status ENUM
@@ -607,21 +639,46 @@ COMPLETED
 CANCELLED
 ```
 
----
-
-# 18. Check-in
-
-A check-in is a periodic management interaction.
+A goal can target several teams, have several owners, and be measured by linked tasks. Each
+relation is a join table, unique on its pair.
 
 ```text
-checkins
+goal_teams        goal_id + team_id
+goal_owners       goal_id + user_id
+goal_tasks        goal_id + task_id
+```
+
+The API exposes `team_ids`, `owner_ids`, and `task_ids`.
+
+Progress is derived when a goal has linked tasks:
+
+```text
+progress = round(100 * done_tasks / countable_tasks)
+```
+
+Cancelled tasks are excluded from the denominator. With no countable linked tasks the stored
+manual value stands; with one or more, setting `progress` directly is a validation error and
+`progress_is_derived` is true in the response. Progress is recomputed when a linked task changes
+status, when a task is deleted, and when links are added or removed.
+
+Visibility follows the join tables: a MEMBER sees goals they own, a MANAGER sees goals on their
+teams.
+
+---
+
+# 18. Meeting
+
+A meeting is a recorded conversation between a manager and a member.
+
+```text
+meetings
 --------
 id UUID PK
 organization_id UUID FK
 manager_id UUID FK
 member_id UUID FK
-period_start DATE
-period_end DATE
+type ENUM
+scheduled_on DATE
 status ENUM
 wins TEXT NULL
 challenges TEXT NULL
@@ -629,6 +686,14 @@ next_steps TEXT NULL
 manager_notes TEXT NULL
 created_at TIMESTAMP
 updated_at TIMESTAMP
+```
+
+Types:
+
+```text
+CHECK_IN
+ONE_ON_ONE
+PERFORMANCE_REVIEW
 ```
 
 Statuses:
@@ -639,7 +704,39 @@ SUBMITTED
 REVIEWED
 ```
 
+The workflow is DRAFT → SUBMITTED → REVIEWED for every type; transitions cannot skip or reverse.
 Phase 1 does not need a complex questionnaire system.
+
+---
+
+# 18.1 Feedback
+
+Feedback is a note one member writes about a colleague.
+
+```text
+feedback
+--------
+id UUID PK
+organization_id UUID FK
+subject_id UUID FK
+author_id UUID FK
+sentiment ENUM
+body TEXT
+created_at TIMESTAMP
+updated_at TIMESTAMP
+```
+
+Sentiments:
+
+```text
+POSITIVE
+NEGATIVE
+```
+
+Any member may write feedback about another member; `author_id <> subject_id`. Only the author
+may change or delete it. Reads are limited to the author, the subject's management line via
+`reports_to_user_id`, and OWNER/ADMIN. Nobody reads feedback written about themselves, whatever
+their role, and to them it returns 404 rather than 403 so its existence stays hidden.
 
 ---
 
@@ -786,9 +883,19 @@ GET    /api/v1/goals
 POST   /api/v1/goals
 PATCH  /api/v1/goals/{id}
 
-GET    /api/v1/checkins
-POST   /api/v1/checkins
-PATCH  /api/v1/checkins/{id}
+GET    /api/v1/meetings
+POST   /api/v1/meetings
+GET    /api/v1/meetings/{id}
+PATCH  /api/v1/meetings/{id}
+
+GET    /api/v1/feedback
+POST   /api/v1/feedback
+GET    /api/v1/feedback/{id}
+PATCH  /api/v1/feedback/{id}
+DELETE /api/v1/feedback/{id}
+
+GET    /api/v1/organizations/current/hierarchy
+PATCH  /api/v1/organizations/current/members/{user_id}
 
 GET    /api/v1/dashboard
 ```
@@ -868,6 +975,8 @@ GET /tasks?status=IN_PROGRESS
 GET /tasks?priority=HIGH
 GET /tasks?assignee_id=...
 GET /projects?status=ACTIVE
+GET /meetings?type=ONE_ON_ONE
+GET /feedback?subject_id=...&sentiment=NEGATIVE
 ```
 
 Sorting should use explicit allowed fields.
@@ -1070,7 +1179,8 @@ src/
 │   ├── projects/
 │   ├── tasks/
 │   ├── goals/
-│   └── checkins/
+│   ├── meetings/
+│   └── feedback/
 ├── hooks/
 ├── lib/
 ├── services/
@@ -1121,7 +1231,7 @@ Open tasks
 Overdue tasks
 Goals
 Goal progress
-Recent check-ins
+Recent meetings
 Recent activity
 ```
 
@@ -1149,7 +1259,7 @@ Example:
  Recent Activity
 ---------------------------------------------
  Ali completed "API redesign"
- Sara submitted weekly check-in
+ Sara submitted a check-in
  Reza created a new project
 ```
 
@@ -1408,7 +1518,7 @@ Track progress
 ↓
 Create goals
 ↓
-Conduct check-ins
+Conduct meetings
 ↓
 View dashboard
 ```
@@ -1431,10 +1541,7 @@ Google Calendar
 Microsoft Teams
 AI assistant
 AI summaries
-Performance management
-1:1 meetings
 OKRs
-Feedback
 Analytics
 Notifications
 Email

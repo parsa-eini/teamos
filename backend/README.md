@@ -8,5 +8,70 @@ Ruff.
 Architecture: `router → service → repository → database`. See `AI_BUILD_SPEC.md` sections 6, 22 and
 38 for the module layout and layering rules.
 
-The application itself is implemented in Stage 2 of `IMPLEMENTATION_PLAN.md`. This directory is
-currently a placeholder created in Stage 0.
+## Layout
+
+```text
+app/
+├── main.py          Application factory and the /health endpoint
+├── core/            Configuration, logging, database, Redis and security
+├── common/          Exceptions, error handlers, pagination, dependencies and response envelopes
+├── modules/         Business modules (auth, users, organizations, teams, projects, tasks, goals, meetings, feedback, dashboard, notifications)
+└── tests/           Test suite
+alembic/             Migration environment
+alembic.ini
+```
+
+## Running
+
+The backend normally runs through Docker Compose from the repository root:
+
+```bash
+docker compose up backend
+```
+
+The API is then served on <http://localhost:8000>, with OpenAPI documentation at
+<http://localhost:8000/docs> and a liveness check at <http://localhost:8000/health>.
+
+To run it directly instead, from this directory:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install --editable ".[dev]"
+uvicorn app.main:create_app --factory --reload
+```
+
+`DATABASE_URL`, `REDIS_URL` and `SECRET_KEY` have no defaults and must be present in the
+environment, otherwise startup fails with a validation error.
+
+Database migrations use Alembic from this directory:
+
+```bash
+alembic upgrade head
+alembic revision --autogenerate -m "description"
+```
+
+Revisions create the `users`, `organizations`, `organization_memberships`, `teams`,
+`team_memberships`, `projects`, `tasks`, `task_assignees`, `goals`, `goal_teams`, `goal_owners`,
+`goal_tasks`, `meetings`, `feedback`, and `notifications` tables, plus composite indexes used by
+dashboard and list filters. After changing models, generate a revision
+and apply it with `alembic upgrade head`. Docker Compose runs `alembic upgrade head` on backend
+startup.
+
+## Configuration
+
+Configuration is read from environment variables by `app/core/config.py`. The authoritative list of
+variables is `.env.example` in the repository root.
+
+`DATABASE_URL` should use the `postgresql+psycopg://` scheme. Unadorned `postgresql://` URLs are
+rewritten to that driver at runtime.
+
+## Quality checks
+
+```bash
+pytest                                      # tests
+pytest --cov=app --cov-report=term-missing  # tests with coverage
+ruff check .                                # linting
+ruff format .                               # formatting
+mypy app                                    # type checking
+```

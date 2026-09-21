@@ -1,7 +1,8 @@
 # Team Management Product
 
 A lightweight team-management platform for engineering managers and team leads. It covers
-organizations, teams, members, projects, tasks, goals, check-ins and a manager dashboard.
+organizations, teams, members, projects, tasks, goals, meetings, colleague feedback, a manager
+dashboard, and in-app notifications.
 
 `AI_BUILD_SPEC.md` is the source of truth for scope and architecture. `IMPLEMENTATION_PLAN.md`
 describes the staged build order, and `DEFINITION_OF_DONE.md` defines when work is complete.
