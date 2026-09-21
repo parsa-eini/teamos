@@ -104,7 +104,9 @@ def downgrade() -> None:
     # Meetings that are not check-ins have no period to restore; they collapse to a single day.
     op.add_column("meetings", sa.Column("period_start", sa.Date(), nullable=True))
     op.add_column("meetings", sa.Column("period_end", sa.Date(), nullable=True))
-    op.execute(sa.text("UPDATE meetings SET period_start = scheduled_on, period_end = scheduled_on"))
+    op.execute(
+        sa.text("UPDATE meetings SET period_start = scheduled_on, period_end = scheduled_on")
+    )
     op.alter_column("meetings", "period_start", nullable=False)
     op.alter_column("meetings", "period_end", nullable=False)
     op.create_check_constraint("ck_checkins_period", "meetings", "period_end >= period_start")
