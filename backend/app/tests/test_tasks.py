@@ -462,9 +462,12 @@ def test_task_can_carry_several_assignees(client: TestClient, app: FastAPI) -> N
     )
     assert narrowed.status_code == 200
     assert narrowed.json()["data"]["assignee_ids"] == [member_id]
-    assert client.get(f"/api/v1/tasks?assignee_id={owner_id}", headers=_auth(token)).json()[
-        "meta"
-    ]["total"] == 0
+    assert (
+        client.get(f"/api/v1/tasks?assignee_id={owner_id}", headers=_auth(token)).json()["meta"][
+            "total"
+        ]
+        == 0
+    )
 
     cleared = client.patch(
         f"/api/v1/tasks/{task['id']}",

@@ -109,9 +109,7 @@ class TaskAssignee(Base):
     """Assignment of a task to a user. A task may have any number of assignees."""
 
     __tablename__ = "task_assignees"
-    __table_args__ = (
-        UniqueConstraint("task_id", "user_id", name="uq_task_assignees_task_user"),
-    )
+    __table_args__ = (UniqueConstraint("task_id", "user_id", name="uq_task_assignees_task_user"),)
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     task_id: Mapped[UUID] = mapped_column(

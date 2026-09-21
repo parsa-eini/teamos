@@ -515,9 +515,7 @@ def test_owner_can_set_and_clear_a_reporting_line(client: TestClient) -> None:
     assert assigned.json()["data"]["reports_to_user_id"] == manager_id
 
     listed = client.get("/api/v1/organizations/current/members", headers=_auth(token))
-    reports_to = {
-        member["email"]: member["reports_to_user_id"] for member in listed.json()["data"]
-    }
+    reports_to = {member["email"]: member["reports_to_user_id"] for member in listed.json()["data"]}
     assert reports_to["member@example.com"] == manager_id
     assert reports_to["manager@example.com"] is None
 

@@ -1,6 +1,5 @@
 """Goal API schemas. Progress is validated here (0-100) and again by a database check."""
 
-
 from datetime import date, datetime
 from uuid import UUID
 

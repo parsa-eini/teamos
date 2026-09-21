@@ -204,9 +204,7 @@ def create_goal(
     _require_tasks_in_organization(session, context.organization.id, payload.task_ids)
     _assert_progress(payload.progress)
     if payload.task_ids and payload.progress:
-        raise ValidationError(
-            "progress is derived from linked tasks and cannot be set directly"
-        )
+        raise ValidationError("progress is derived from linked tasks and cannot be set directly")
 
     goal = Goal(
         organization_id=context.organization.id,

@@ -96,9 +96,7 @@ def list_members(
         .where(*filters)
     )
     total = (
-        session.scalar(
-            select(func.count()).select_from(OrganizationMembership).where(*filters)
-        )
+        session.scalar(select(func.count()).select_from(OrganizationMembership).where(*filters))
         or 0
     )
     rows = list(

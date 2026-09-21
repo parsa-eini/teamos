@@ -82,9 +82,7 @@ def test_alembic_revisions_form_a_single_unbroken_chain() -> None:
     assert (_BACKEND_ROOT / "alembic" / "env.py").is_file()
     assert (_BACKEND_ROOT / "alembic" / "script.py.mako").is_file()
 
-    revision_files = sorted(
-        path for path in (_BACKEND_ROOT / "alembic" / "versions").glob("*.py")
-    )
+    revision_files = sorted(path for path in (_BACKEND_ROOT / "alembic" / "versions").glob("*.py"))
     assert revision_files, "expected at least one migration"
 
     names = [path.stem for path in revision_files]

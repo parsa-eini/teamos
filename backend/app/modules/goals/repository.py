@@ -148,9 +148,7 @@ def _replace_links(
     wanted = list(dict.fromkeys(target_ids))
     removed = current - set(wanted)
     if removed:
-        session.execute(
-            sql_delete(model).where(model.goal_id == goal_id, column.in_(removed))
-        )
+        session.execute(sql_delete(model).where(model.goal_id == goal_id, column.in_(removed)))
     for target_id in wanted:
         if target_id not in current:
             session.add(model(goal_id=goal_id, **{field: target_id}))
