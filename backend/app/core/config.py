@@ -6,7 +6,10 @@ full list and `AI_BUILD_SPEC.md` section 29 for the specification.
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+MIN_SECRET_KEY_LENGTH = 32
 
 
 class Settings(BaseSettings):
@@ -21,7 +24,7 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
 
-    secret_key: str
+    secret_key: str = Field(min_length=MIN_SECRET_KEY_LENGTH)
     access_token_expire_minutes: int = 60
 
     # Comma-separated in the environment because env vars carry no list type.

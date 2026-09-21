@@ -1,11 +1,28 @@
 """FastAPI application factory."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.common.error_handlers import register_exception_handlers
 from app.core.config import Settings, get_settings
+from app.core.database import create_engine_from_settings, create_session_factory
 from app.core.logging import RequestLoggingMiddleware, configure_logging
+from app.core.redis import RedisClient, create_redis
+from app.modules.auth.router import router as auth_router
+from app.modules.dashboard.router import router as dashboard_router
+from app.modules.feedback.router import router as feedback_router
+from app.modules.goals.router import router as goals_router
+from app.modules.meetings.router import router as meetings_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.organizations.router import router as organizations_router
+from app.modules.projects.router import router as projects_router
+from app.modules.tasks.router import router as tasks_router
+from app.modules.teams.router import router as teams_router
+from app.modules.users.router import router as users_router
 
 
 class HealthResponse(BaseModel):
@@ -20,11 +37,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     configure_logging()
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        app.state.redis.close()
+        app.state.engine.dispose()
+
     app = FastAPI(
         title="Team Management API",
         version="0.1.0",
         summary="Backend API for the team management product.",
+        lifespan=lifespan,
     )
+
+    app.state.settings = settings
+    app.state.engine = create_engine_from_settings(settings)
+    app.state.session_factory = create_session_factory(app.state.engine)
+    app.state.redis = RedisClient(create_redis(settings.redis_url))
 
     app.add_middleware(RequestLoggingMiddleware)
 
@@ -36,6 +65,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    register_exception_handlers(app)
+
+    app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(users_router, prefix="/api/v1")
+    app.include_router(organizations_router, prefix="/api/v1")
+    app.include_router(teams_router, prefix="/api/v1")
+    app.include_router(projects_router, prefix="/api/v1")
+    app.include_router(tasks_router, prefix="/api/v1")
+    app.include_router(goals_router, prefix="/api/v1")
+    app.include_router(meetings_router, prefix="/api/v1")
+    app.include_router(feedback_router, prefix="/api/v1")
+    app.include_router(dashboard_router, prefix="/api/v1")
+    app.include_router(notifications_router, prefix="/api/v1")
 
     @app.get(
         "/health",

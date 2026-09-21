@@ -89,6 +89,24 @@ def test_request_is_logged_with_the_required_fields(client: TestClient) -> None:
     assert isinstance(logged["duration_ms"], float)
 
 
+def test_request_log_does_not_include_credentials(client: TestClient) -> None:
+    with collect_request_logs() as collector:
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "alex@example.com", "password": "super-secret-password"},
+            headers={"Authorization": "Bearer leaked-access-token"},
+        )
+
+    assert collector.records
+    payload = json.loads(JsonFormatter().format(collector.records[0]))
+    serialized = json.dumps(payload)
+    assert "super-secret-password" not in serialized
+    assert "leaked-access-token" not in serialized
+    assert "password" not in serialized
+    assert "authorization" not in serialized.lower()
+    assert payload["path"] == "/api/v1/auth/login"
+
+
 def test_request_log_records_are_serialisable_json(client: TestClient) -> None:
     with collect_request_logs() as collector:
         client.get("/health")
