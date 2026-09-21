@@ -1,0 +1,127 @@
+# Runs when code lands on develop or main, and before it lands:
+# - direct pushes to develop or main
+# - merges into develop or main (a merge is a push to the target)
+# - pull requests targeting develop or main
+# Manual runs are available from the Actions tab.
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+psycopg://teamos:teamos@localhost:5432/teamos
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-secret-key-that-is-at-least-32-chars
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: teamos
+          POSTGRES_USER: teamos
+          POSTGRES_PASSWORD: teamos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U teamos -d teamos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: pip install --editable ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Type check
+        run: mypy app
+
+      - name: Test
+        run: pytest --cov=app --cov-report=term-missing
+
+      - name: Apply migrations
+        run: alembic upgrade head
+
+  frontend:
+    name: Frontend (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [website, panel]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Build images
+        run: docker compose build
